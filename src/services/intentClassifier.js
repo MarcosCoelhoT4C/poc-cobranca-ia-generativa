@@ -25,6 +25,7 @@ class IntentClassifier {
   }
 
   classify(message, conversationHistory = '') {
+    const currentMsg = message.toLowerCase();
     const fullContext = `${conversationHistory}\n${message}`.toLowerCase();
     const scores = {};
 
@@ -32,18 +33,23 @@ class IntentClassifier {
       let matchedLevel = 'medium';
       let maxScore = 0.5;
 
-      for (const [level, patterns] of Object.entries(levels)) {
-        for (const pattern of patterns) {
-          if (pattern.test(fullContext)) {
-            const levelScore = level === 'high' || level === 'cooperative' ? 0.85
-              : level === 'medium' || level === 'stressed' ? 0.55
-              : 0.2;
-            if (Math.abs(levelScore - 0.5) > Math.abs(maxScore - 0.5)) {
-              maxScore = levelScore;
-              matchedLevel = level;
+      // Prioritize matching against current message first
+      for (const source of [currentMsg, fullContext]) {
+        for (const [level, patterns] of Object.entries(levels)) {
+          for (const pattern of patterns) {
+            if (pattern.test(source)) {
+              const levelScore = level === 'high' || level === 'cooperative' ? 0.85
+                : level === 'medium' || level === 'stressed' ? 0.55
+                : 0.2;
+              if (Math.abs(levelScore - 0.5) > Math.abs(maxScore - 0.5)) {
+                maxScore = levelScore;
+                matchedLevel = level;
+              }
             }
           }
         }
+        // If we found a match in the current message, use it (don't let history override)
+        if (maxScore !== 0.5) break;
       }
 
       scores[category] = { score: maxScore, level: matchedLevel };

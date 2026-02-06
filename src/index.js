@@ -35,9 +35,10 @@ app.use('/api/v1/metrics', metricsRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Start server
-app.listen(config.port, () => {
-  console.log(`
+// Start server only when run directly (not when imported for tests)
+if (require.main === module) {
+  app.listen(config.port, () => {
+    console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║     POC Cobrança com IA Generativa - API Server         ║
 ╠══════════════════════════════════════════════════════════╣
@@ -55,7 +56,8 @@ app.listen(config.port, () => {
 ║    GET  /health                    - Liveness probe      ║
 ║    GET  /ready                     - Readiness probe     ║
 ╚══════════════════════════════════════════════════════════╝
-  `);
-});
+    `);
+  });
+}
 
 module.exports = app;

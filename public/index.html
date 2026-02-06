@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consorciei - Dashboard de Cobrança IA</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom: 1px solid #334155; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header h1 span { color: #3b82f6; }
+    .header .status { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #94a3b8; }
+    .header .status .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .metric-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; transition: border-color 0.2s; }
+    .metric-card:hover { border-color: #3b82f6; }
+    .metric-card .label { font-size: 13px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .metric-card .value { font-size: 28px; font-weight: 700; color: #f8fafc; }
+    .metric-card .sub { font-size: 12px; color: #64748b; margin-top: 4px; }
+    .metric-card.success .value { color: #22c55e; }
+    .metric-card.warning .value { color: #f59e0b; }
+    .metric-card.info .value { color: #3b82f6; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; }
+    .panel h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .panel h2 .icon { font-size: 18px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; color: #94a3b8; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #334155; }
+    td { padding: 10px 12px; border-bottom: 1px solid #1e293b; }
+    tr:hover td { background: #334155; }
+
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 500; }
+    .badge.green { background: #052e16; color: #4ade80; }
+    .badge.yellow { background: #422006; color: #fbbf24; }
+    .badge.red { background: #450a0a; color: #f87171; }
+    .badge.blue { background: #172554; color: #60a5fa; }
+
+    .bar-chart { display: flex; flex-direction: column; gap: 12px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; }
+    .bar-label { width: 90px; font-size: 13px; color: #94a3b8; text-align: right; }
+    .bar-track { flex: 1; height: 28px; background: #0f172a; border-radius: 6px; overflow: hidden; position: relative; }
+    .bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding: 0 10px; font-size: 12px; font-weight: 600; color: white; transition: width 1s ease; }
+    .bar-fill.whatsapp { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .bar-fill.sms { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+    .bar-fill.email { background: linear-gradient(90deg, #f59e0b, #d97706); }
+
+    .chat-demo { background: #0f172a; border-radius: 8px; padding: 16px; max-height: 400px; overflow-y: auto; }
+    .chat-msg { margin-bottom: 12px; display: flex; flex-direction: column; }
+    .chat-msg.assistant { align-items: flex-start; }
+    .chat-msg.customer { align-items: flex-end; }
+    .chat-bubble { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+    .chat-msg.assistant .chat-bubble { background: #1e293b; border: 1px solid #334155; border-bottom-left-radius: 2px; }
+    .chat-msg.customer .chat-bubble { background: #1d4ed8; border-bottom-right-radius: 2px; }
+    .chat-meta { font-size: 11px; color: #64748b; margin-top: 4px; padding: 0 4px; }
+
+    .actions { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .btn { padding: 10px 20px; border: 1px solid #334155; border-radius: 8px; background: #1e293b; color: #e2e8f0; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+    .btn:hover { border-color: #3b82f6; background: #334155; }
+    .btn.primary { background: #2563eb; border-color: #2563eb; }
+    .btn.primary:hover { background: #1d4ed8; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .alert.warning { background: #422006; border: 1px solid #92400e; color: #fbbf24; }
+    .alert.info { background: #172554; border: 1px solid #1e40af; color: #60a5fa; }
+
+    #loading { text-align: center; padding: 40px; color: #64748b; }
+    .events-log { max-height: 250px; overflow-y: auto; font-size: 13px; }
+    .event-item { padding: 6px 0; border-bottom: 1px solid #1e293b; display: flex; justify-content: space-between; }
+    .event-item .time { color: #64748b; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><span>Consorciei</span> | Dashboard de Cobranca IA</h1>
+    <div class="status"><div class="dot"></div> <span id="statusText">Conectando...</span></div>
+  </div>
+
+  <div class="container">
+    <div class="actions">
+      <button class="btn primary" onclick="seedData()">Carregar Dados Demo</button>
+      <button class="btn" onclick="refreshMetrics()">Atualizar Metricas</button>
+      <button class="btn" onclick="startConversation()">Nova Conversa IA</button>
+    </div>
+
+    <div id="alerts"></div>
+
+    <div class="metrics-grid" id="metricsGrid">
+      <div class="metric-card info"><div class="label">Total Conversas</div><div class="value" id="mTotalConv">--</div><div class="sub">Iniciadas no periodo</div></div>
+      <div class="metric-card success"><div class="label">Pagamentos Bem-Sucedidos</div><div class="value" id="mPayments">--</div><div class="sub">Confirmados</div></div>
+      <div class="metric-card"><div class="label">Valor Recuperado</div><div class="value" id="mRecovery">--</div><div class="sub">Total em R$</div></div>
+      <div class="metric-card warning"><div class="label">Acuracia IA</div><div class="value" id="mAccuracy">--</div><div class="sub">Confianca media</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h2>Performance por Canal</h2>
+        <div class="bar-chart" id="channelChart">
+          <div class="bar-row"><div class="bar-label">WhatsApp</div><div class="bar-track"><div class="bar-fill whatsapp" id="barWhatsapp" style="width:0%"></div></div></div>
+          <div class="bar-row"><div class="bar-label">SMS</div><div class="bar-track"><div class="bar-fill sms" id="barSms" style="width:0%"></div></div></div>
+          <div class="bar-row"><div class="bar-label">Email</div><div class="bar-track"><div class="bar-fill email" id="barEmail" style="width:0%"></div></div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Segmentos de Clientes</h2>
+        <table>
+          <thead><tr><th>Segmento</th><th>Contagem</th><th>Taxa Sucesso</th><th>Tempo Med. (h)</th></tr></thead>
+          <tbody id="segmentTable"><tr><td colspan="4" style="color:#64748b;text-align:center">Sem dados</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h2>Conversa IA Demo</h2>
+        <div class="chat-demo" id="chatDemo">
+          <div style="color:#64748b;text-align:center;padding:40px">Clique em "Carregar Dados Demo" para iniciar</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <input type="text" id="chatInput" placeholder="Simular mensagem do cliente..." style="flex:1;padding:10px 14px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:14px" onkeypress="if(event.key==='Enter')sendMessage()">
+          <button class="btn primary" onclick="sendMessage()">Enviar</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Eventos Recentes</h2>
+        <div class="events-log" id="eventsLog">
+          <div style="color:#64748b;text-align:center;padding:20px">Sem eventos</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = '';
+    const TOKEN = 'dev-token';
+    let currentConversationId = null;
+    let customersLoaded = false;
+
+    async function api(method, path, body) {
+      const opts = { method, headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(`${API}${path}`, opts);
+      return res.json();
+    }
+
+    async function checkHealth() {
+      try {
+        const data = await (await fetch('/health')).json();
+        document.getElementById('statusText').textContent = `API Online | Uptime: ${Math.floor(data.uptime)}s`;
+      } catch { document.getElementById('statusText').textContent = 'API Offline'; }
+    }
+
+    async function seedData() {
+      const btn = event.target; btn.disabled = true; btn.textContent = 'Carregando...';
+      try {
+        const portRes = await api('POST', '/api/v1/portfolios/ingest', {
+          administrator_id: 'admin_12345', portfolio_type: 'overdue_1_3_months',
+          customer_data: [
+            { customer_id: 'cust_001', document: '12345678901', name: 'Joao Silva Santos', phone: '+5511999888777', email: 'joao@email.com', overdue_amount: 2450.75, overdue_days: 45, payment_history_score: 0.75, risk_segment: 'medium', total_consortium_value: 85000 },
+            { customer_id: 'cust_002', document: '98765432100', name: 'Maria Oliveira Costa', phone: '+5521988776655', email: 'maria@email.com', overdue_amount: 5200.00, overdue_days: 92, payment_history_score: 0.45, risk_segment: 'high', total_consortium_value: 120000 },
+            { customer_id: 'cust_003', document: '11122233344', name: 'Carlos Eduardo Pereira', phone: '+5531977665544', email: 'carlos@email.com', overdue_amount: 890.50, overdue_days: 15, payment_history_score: 0.90, risk_segment: 'low', total_consortium_value: 45000 },
+            { customer_id: 'cust_004', document: '55566677788', name: 'Ana Paula Rodrigues', phone: '+5541966554433', email: 'ana@email.com', overdue_amount: 3750.00, overdue_days: 60, payment_history_score: 0.60, risk_segment: 'medium', total_consortium_value: 200000 },
+            { customer_id: 'cust_005', document: '99988877766', name: 'Roberto Almeida', phone: '+5551955443322', email: 'roberto@email.com', overdue_amount: 1200.00, overdue_days: 30, payment_history_score: 0.82, risk_segment: 'low', total_consortium_value: 70000, age: 62 },
+          ],
+          business_rules: { max_discount_percentage: 15, min_installment_value: 100 }
+        });
+        customersLoaded = true;
+        showAlert('info', `Portfolio importado: ${portRes.customers_imported} clientes | ID: ${portRes.portfolio_id}`);
+
+        // Start conversations for demo
+        const channels = ['whatsapp', 'whatsapp', 'sms', 'email', 'whatsapp'];
+        for (let i = 1; i <= 5; i++) {
+          const conv = await api('POST', '/api/v1/conversations/start', { customer_id: `cust_00${i}`, channel: channels[i-1] });
+          if (i === 1) { currentConversationId = conv.conversation_id; showChat(conv); }
+        }
+
+        // Process a payment
+        if (currentConversationId) {
+          await api('POST', '/api/v1/payments/process', {
+            conversation_id: currentConversationId,
+            payment_proposal: { total_amount: 2450.75, payment_method: 'pix', payment_option: 'full_amount' },
+            customer_confirmation: { method: 'text_confirmation' }
+          });
+        }
+
+        await refreshMetrics();
+      } catch (e) { showAlert('warning', `Erro: ${e.message}`); }
+      btn.disabled = false; btn.textContent = 'Carregar Dados Demo';
+    }
+
+    function showChat(conv) {
+      const chat = document.getElementById('chatDemo');
+      chat.innerHTML = `<div class="chat-msg assistant"><div class="chat-bubble">${conv.initial_message}</div><div class="chat-meta">IA | Confianca: ${(conv.ai_confidence*100).toFixed(0)}% | Taxa Sucesso Est.: ${(conv.estimated_success_rate*100).toFixed(0)}%</div></div>`;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
+      if (!msg || !currentConversationId) return;
+      input.value = '';
+
+      const chat = document.getElementById('chatDemo');
+      chat.innerHTML += `<div class="chat-msg customer"><div class="chat-bubble">${msg}</div><div class="chat-meta">Cliente</div></div>`;
+
+      const res = await api('POST', `/api/v1/conversations/${currentConversationId}/message`, { message: msg });
+      chat.innerHTML += `<div class="chat-msg assistant"><div class="chat-bubble">${res.ai_response}</div><div class="chat-meta">IA (${res.strategy}) | Confianca: ${(res.ai_confidence*100).toFixed(0)}% | Cluster: ${res.personality_cluster}</div></div>`;
+      chat.scrollTop = chat.scrollHeight;
+
+      await refreshMetrics();
+    }
+
+    async function startConversation() {
+      if (!customersLoaded) { showAlert('warning', 'Carregue os dados demo primeiro'); return; }
+      const customers = ['cust_001','cust_002','cust_003','cust_004','cust_005'];
+      const cid = customers[Math.floor(Math.random() * customers.length)];
+      const conv = await api('POST', '/api/v1/conversations/start', { customer_id: cid, channel: 'whatsapp' });
+      currentConversationId = conv.conversation_id;
+      showChat(conv);
+      showAlert('info', `Nova conversa iniciada: ${conv.conversation_id}`);
+      await refreshMetrics();
+    }
+
+    async function refreshMetrics() {
+      try {
+        const m = await api('GET', '/api/v1/metrics/realtime?timeframe=24h');
+        document.getElementById('mTotalConv').textContent = m.summary.total_conversations;
+        document.getElementById('mPayments').textContent = m.summary.successful_payments;
+        document.getElementById('mRecovery').textContent = `R$ ${m.summary.total_recovery_amount.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        document.getElementById('mAccuracy').textContent = m.summary.ai_accuracy ? `${(m.summary.ai_accuracy*100).toFixed(1)}%` : '--';
+
+        // Channels
+        const total = Math.max(1, (m.channels.whatsapp?.conversations||0) + (m.channels.sms?.conversations||0) + (m.channels.email?.conversations||0));
+        document.getElementById('barWhatsapp').style.width = `${(m.channels.whatsapp?.conversations||0)/total*100}%`;
+        document.getElementById('barWhatsapp').textContent = `${m.channels.whatsapp?.conversations||0} conv (${((m.channels.whatsapp?.success_rate||0)*100).toFixed(0)}%)`;
+        document.getElementById('barSms').style.width = `${Math.max(5,(m.channels.sms?.conversations||0)/total*100)}%`;
+        document.getElementById('barSms').textContent = `${m.channels.sms?.conversations||0} conv`;
+        document.getElementById('barEmail').style.width = `${Math.max(5,(m.channels.email?.conversations||0)/total*100)}%`;
+        document.getElementById('barEmail').textContent = `${m.channels.email?.conversations||0} conv`;
+
+        // Segments
+        const tbody = document.getElementById('segmentTable');
+        const segs = m.customer_segments || {};
+        const segNames = { high_priority: 'Alta Prioridade', medium_priority: 'Media Prioridade', low_priority: 'Baixa Prioridade' };
+        const segColors = { high_priority: 'red', medium_priority: 'yellow', low_priority: 'green' };
+        let html = '';
+        for (const [key, val] of Object.entries(segs)) {
+          html += `<tr><td><span class="badge ${segColors[key]}">${segNames[key]||key}</span></td><td>${val.count}</td><td>${(val.success_rate*100).toFixed(1)}%</td><td>${val.avg_recovery_time_hours}h</td></tr>`;
+        }
+        tbody.innerHTML = html || '<tr><td colspan="4" style="color:#64748b;text-align:center">Sem dados</td></tr>';
+
+        // Events
+        if (m.recent_events && m.recent_events.length > 0) {
+          const evLog = document.getElementById('eventsLog');
+          evLog.innerHTML = m.recent_events.slice(-15).reverse().map(e =>
+            `<div class="event-item"><span><span class="badge blue">${e.event_type}</span> ${e.customer_id||''}</span><span class="time">${new Date(e.timestamp).toLocaleTimeString('pt-BR')}</span></div>`
+          ).join('');
+        }
+
+        // Alerts
+        if (m.alerts && m.alerts.length > 0) {
+          m.alerts.forEach(a => showAlert(a.severity, a.message));
+        }
+      } catch (e) { console.error('Metrics error:', e); }
+    }
+
+    function showAlert(type, message) {
+      const container = document.getElementById('alerts');
+      const div = document.createElement('div');
+      div.className = `alert ${type}`;
+      div.innerHTML = `<strong>${type === 'warning' ? 'Alerta' : 'Info'}:</strong> ${message}`;
+      container.prepend(div);
+      setTimeout(() => div.remove(), 8000);
+    }
+
+    checkHealth();
+    setInterval(checkHealth, 10000);
+  </script>
+</body>
+</html>
